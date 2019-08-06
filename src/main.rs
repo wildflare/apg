@@ -30,17 +30,15 @@ fn get_web_body(url: &str) -> String {
 }
 
 fn scraype_pressure_data(body: &str, data: &mut Vec<f32>) {
-    const OFFSET: usize = 3;
+    const OFFSET: usize = 2;
     const DATA_POSITION: usize = 9;
 
     let fragment = Html::parse_document(&body);
     let selector = Selector::parse("#tbl_list > tbody > tr").unwrap();
 
-    let mut cnt = 0;
-    for value in fragment.select(&selector) {
-        cnt += 1;
+    for (i, value) in fragment.select(&selector).enumerate() {
         let value_txt = value.text().collect::<Vec<_>>();
-        if cnt < OFFSET {
+        if i < OFFSET {
             continue;
         }
         match value_txt[DATA_POSITION].parse::<f32>() {
@@ -80,15 +78,15 @@ fn set_field(fld: &mut [Vec<i32>], data: &Vec<f32>) {
     let r_offset = get_range_offset(data);
     let t_offset = get_time_offset(data) - 1;
 
-    let mut cnt: usize = 0;
+    let mut i: usize = 0;
     for dt in &data[t_offset..] {
-        let i: isize = (r_offset as isize) * (MAGNIFICATION as isize)
+        let y: isize = (r_offset as isize) * (MAGNIFICATION as isize)
             - (round(*dt * (MAGNIFICATION as f32)) as isize);
-        if i >= 0 && i < BP_RANGE as isize {
-            let row: usize = i as usize;
-            fld[row][cnt] = 1;
+        if y >= 0 && y < BP_RANGE as isize {
+            let row: usize = y as usize;
+            fld[row][i] = 1;
         }
-        cnt += 1;
+        i += 1;
     }
 }
 
@@ -107,9 +105,8 @@ fn print_field(fld: &mut [Vec<i32>], data: &Vec<f32>) {
     let mut dot: String;
     let mut atmark: String;
 
-    let mut cnt: usize = 0;
-    for row in fld {
-        let step: f32 = r_offset as f32 - (cnt as f32) / (MAGNIFICATION as f32);
+    for (i, row) in fld.iter().enumerate() {
+        let step: f32 = r_offset as f32 - (i as f32) / (MAGNIFICATION as f32);
         if ((step * 10.0) as isize) % 10 == 0 {
             print!("{0:>6}", step);
             dot = "...".to_string();
@@ -119,7 +116,6 @@ fn print_field(fld: &mut [Vec<i32>], data: &Vec<f32>) {
             dot = "   ".to_string();
             atmark = " @ ".to_string();
         }
-        cnt += 1;
         for col in row {
             let cell = if *col == 0 {
                 dot.to_string()

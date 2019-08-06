@@ -7,11 +7,19 @@ use scraper::{Html, Selector};
 
 const BP_RANGE: usize = 21;
 const TIME_RANGE: usize = 24;
-const GRAPH_CENTER: usize = TIME_RANGE / 2;
 const MAGNIFICATION: usize = 4;
 
 fn round(f: f32) -> usize {
     (f + 0.5) as usize
+}
+
+fn average(data: &Vec<f32>) -> f32 {
+    let mut total: f32 = 0.0;
+
+    for dt in data {
+        total += dt;
+    }
+    total / (data.len() as f32)
 }
 
 fn get_web_body(url: &str) -> String {
@@ -61,8 +69,7 @@ fn scraype_date_time(body: &str) -> String {
 }
 
 fn get_range_offset(data: &Vec<f32>) -> usize {
-    let n = data.len();
-    round(data[n - GRAPH_CENTER]) + (BP_RANGE / 2 / MAGNIFICATION)
+    round(average(data)) + (BP_RANGE / 2 / MAGNIFICATION)
 }
 
 fn get_time_offset(data: &Vec<f32>) -> usize {

@@ -5,9 +5,10 @@ extern crate scraper;
 
 use scraper::{Html, Selector};
 
-const BP_RANGE: usize = 20;
+const BP_RANGE: usize = 21;
 const TIME_RANGE: usize = 24;
 const GRAPH_CENTER: usize = TIME_RANGE / 2;
+const MAGNIFICATION: usize = 4;
 
 fn round(f: f32) -> usize {
     (f + 0.5) as usize
@@ -61,7 +62,7 @@ fn scraype_date_time(body: &str) -> String {
 
 fn get_range_offset(data: &Vec<f32>) -> usize {
     let n = data.len();
-    round(data[n - GRAPH_CENTER]) + (BP_RANGE / 2 - 1)
+    round(data[n - GRAPH_CENTER]) + (BP_RANGE / 2 / MAGNIFICATION)
 }
 
 fn get_time_offset(data: &Vec<f32>) -> usize {
@@ -74,7 +75,8 @@ fn set_field(fld: &mut [Vec<i32>], data: &Vec<f32>) {
 
     let mut cnt: usize = 0;
     for dt in &data[t_offset..] {
-        let i: isize = (r_offset as isize) - (round(*dt) as isize);
+        let i: isize = (r_offset as isize) * (MAGNIFICATION as isize)
+            - (round(*dt * (MAGNIFICATION as f32)) as isize);
         if i >= 0 && i < BP_RANGE as isize {
             let row: usize = i as usize;
             fld[row][cnt] = 1;
@@ -95,13 +97,29 @@ fn print_field(fld: &mut [Vec<i32>], data: &Vec<f32>) {
     }
     println!("");
 
+    let mut dot: String;
+    let mut atmark: String;
+
     let mut cnt: usize = 0;
     for row in fld {
-        print!("{0:>6}", r_offset - cnt);
+        let step: f32 = r_offset as f32 - (cnt as f32) / (MAGNIFICATION as f32);
+        if ((step * 10.0) as isize) % 10 == 0 {
+            print!("{0:>6}", step);
+            dot = "...".to_string();
+            atmark = ".@.".to_string();
+        } else {
+            print!("      ");
+            dot = "   ".to_string();
+            atmark = " @ ".to_string();
+        }
         cnt += 1;
         for col in row {
-            let cell = if *col == 0 { '.' } else { '@' };
-            print!(" {} ", cell);
+            let cell = if *col == 0 {
+                dot.to_string()
+            } else {
+                atmark.to_string()
+            };
+            print!("{}", cell);
         }
         println!("");
     }
@@ -123,5 +141,5 @@ fn main() {
 
     set_field(&mut field, &data);
     print_field(&mut field, &data);
-    println!("\t{}  Air Pressure Graph ver0.8", title);
+    println!("\t\t\t {}", title);
 }
